@@ -1,0 +1,5 @@
+---
+# vars file for zookeeper
+DOWNLOAD_DIR: /opt/archives
+ZOOKEEPER_DIR: /opt/zookeeper
+ZOOKEEPER_URL: "http://mirror.nohup.it/apache/zookeeper/zookeeper-{{ ZOOKEEPER_VERSION }}/zookeeper-{{ ZOOKEEPER_VERSION }}.tar.gz"

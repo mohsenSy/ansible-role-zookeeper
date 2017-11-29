@@ -1,0 +1,8 @@
+---
+# handlers file for zookeeper
+- name: restart zookeeper
+  shell: |
+    PID=`jps | grep "QuorumPeerMain" | cut -d" " -f1`
+    kill $PID
+    sleep 1
+    {{ ZOOKEEPER_DIR }}/zookeeper-{{ ZOOKEEPER_VERSION }}/bin/zkServer.sh start

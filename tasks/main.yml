@@ -1,0 +1,54 @@
+---
+# tasks file for zookeeper
+- name: Create dirs for downloaded files and zookeeper
+  file:
+    name: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ DOWNLOAD_DIR }}"
+    - "{{ ZOOKEEPER_DIR }}"
+- name: Create zookeeper user
+  user:
+    name: "{{ ZOOKEEPER_USER }}"
+    state: present
+- name: Make sure current user can execute commands as zookeeper user
+  lineinfile:
+    name: /etc/sudoers.d/zookeeper
+    line: "{{ ansible_user }} ALL=({{ ZOOKEEPER_USER }}) NOPASSWD: ALL"
+    state: present
+    create: true
+- name: Download zookeeper archive
+  get_url:
+    url: "{{ ZOOKEEPER_URL }}"
+    dest: "{{ DOWNLOAD_DIR }}"
+- name: Unarchive the zookeeper archive
+  unarchive:
+    src: "{{ DOWNLOAD_DIR }}/zookeeper-{{ ZOOKEEPER_VERSION }}.tar.gz"
+    dest: "{{ ZOOKEEPER_DIR }}"
+    owner: "{{ ZOOKEEPER_USER }}"
+    group: "{{ ZOOKEEPER_USER }}"
+    remote_src: true
+  notify: restart zookeeper
+- name: Create zookeeper data dir
+  file:
+    name: "{{ ZOOKEEPER_DATA_DIR }}"
+    state: directory
+    owner: "{{ ZOOKEEPER_USER }}"
+    group: "{{ ZOOKEEPER_USER }}"
+- name: Copy zookeeper config file
+  template:
+    src: zookeeper.yml.j2
+    dest: "{{ ZOOKEEPER_DIR }}/zookeeper-{{ ZOOKEEPER_VERSION }}/conf/zoo.cfg"
+  notify: restart zookeeper
+- name: Start zookeeper
+  shell: |
+    ZOO=`jps | grep "QuorumPeerMain"`
+    if [ -z "$ZOO" ]
+    then
+      cd {{ ZOOKEEPER_DIR }}/zookeeper-{{ ZOOKEEPER_VERSION }}/
+      sudo -u {{ ZOOKEEPER_USER }} bin/zkServer.sh start
+    else
+      echo "Already running"
+    fi
+  register: zookeeper_start
+  changed_when: zookeeper_start.stdout != "Already running"
